@@ -1,0 +1,721 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dualbird AWS Savings Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #F4F6FF;
+      --surface:   #FFFFFF;
+      --surf2:     #EDF0FF;
+      --navy:      #1B2368;
+      --orange:    #E8450C;
+      --orange-lt: #FFF0EB;
+      --blue:      #4263EB;
+      --blue-lt:   #EEF2FF;
+      --indigo:    #2B3BAD;
+      --purple:    #7C5CBF;
+      --purple-lt: #F0EBFF;
+      --green:     #1A9E6A;
+      --green-lt:  #E6F7F1;
+      --body:      #374151;
+      --muted:     #6B7280;
+      --muted-lt:  #9CA3AF;
+      --border:    #D8DEFF;
+      --border-lt: #EEF0FF;
+      --shadow:    0 2px 10px rgba(66,99,235,0.08);
+      --shadow-md: 0 4px 20px rgba(66,99,235,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--body);
+    }
+
+    /* ── Page shell ── */
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 24px 24px;
+    }
+
+    /* ── Top nav bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.3px;
+    }
+    .brand-name span { color: var(--orange); }
+    .topbar-pill {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      background: var(--blue-lt); color: var(--blue);
+      border: 1px solid rgba(66,99,235,0.2);
+      border-radius: 20px; padding: 4px 12px;
+    }
+
+    /* ── Two-column layout ── */
+    .columns {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      flex: 1;
+      align-items: start;
+    }
+
+    /* ── Shared card ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .panel-inner { padding: 24px; }
+
+    /* ── LEFT: section labels ── */
+    .sect-label {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+
+    /* ── Spend input ── */
+    .spend-block {
+      background: var(--surf2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .input-wrap { position: relative; }
+    .curr {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px; font-weight: 700;
+      color: var(--blue); pointer-events: none;
+    }
+    input[type="number"] {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      padding: 12px 14px 12px 34px;
+      font-size: 24px; font-weight: 800; color: var(--navy);
+      font-family: inherit; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(66,99,235,0.1);
+    }
+    .input-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .period-toggle { display: flex; gap: 6px; margin-top: 12px; }
+    .period-btn {
+      flex: 1; padding: 7px 10px;
+      border-radius: 7px; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--muted);
+      font-size: 11px; font-weight: 600; letter-spacing: .04em;
+      text-transform: uppercase; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .period-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .period-btn:not(.active):hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Param panel ── */
+    .params-panel {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .params-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; cursor: pointer;
+      background: var(--surf2); user-select: none; transition: background .15s;
+    }
+    .params-hdr:hover { background: #E3E8FF; }
+    .params-hdr-l { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--navy); }
+    .params-hdr-r { display: flex; align-items: center; gap: 8px; }
+    .btn-reset {
+      font-size: 10px; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 5px;
+      padding: 2px 8px; background: transparent;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .btn-reset:hover { color: var(--orange); border-color: var(--orange); }
+    .chevron { font-size: 9px; color: var(--muted); transition: transform .2s; }
+    .chevron.open { transform: rotate(180deg); }
+
+    .params-body {
+      padding: 0 16px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      border-top: 1px solid var(--border-lt);
+    }
+    .params-body.collapsed { display: none; }
+
+    .param-grp {
+      background: var(--surf2);
+      border: 1px solid var(--border-lt);
+      border-radius: 9px;
+      padding: 12px 14px;
+    }
+    .param-grp-title {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .07em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .param-grp-title.c-purple { color: var(--purple); }
+    .param-grp-title.c-blue   { color: var(--blue); }
+    .param-grp-title.c-green  { color: var(--green); }
+
+    .sl-item { display: flex; flex-direction: column; gap: 5px; }
+    .sl-lbl { font-size: 11px; font-weight: 500; color: var(--body); }
+    .sl-lbl small { font-size: 10px; color: var(--muted-lt); font-weight: 400; }
+    .sl-row { display: flex; align-items: center; gap: 8px; }
+
+    input[type="range"] {
+      flex: 1; height: 4px; border-radius: 2px;
+      -webkit-appearance: none; appearance: none;
+      outline: none; cursor: pointer;
+    }
+    input[type="range"].r-purple { background: linear-gradient(to right, var(--purple) 0%, var(--purple) var(--pct,25%), var(--border) var(--pct,25%)); }
+    input[type="range"].r-blue   { background: linear-gradient(to right, var(--blue)   0%, var(--blue)   var(--pct,40%), var(--border) var(--pct,40%)); }
+    input[type="range"].r-green  { background: linear-gradient(to right, var(--green)  0%, var(--green)  var(--pct,35%), var(--border) var(--pct,35%)); }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+      background: var(--blue); border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(66,99,235,.3); cursor: pointer;
+    }
+    input[type="range"].r-purple::-webkit-slider-thumb { background: var(--purple); }
+    input[type="range"].r-green::-webkit-slider-thumb  { background: var(--green); }
+
+    .pct-badge {
+      min-width: 46px; text-align: center;
+      font-size: 12px; font-weight: 800;
+      border-radius: 6px; padding: 3px 7px;
+      flex-shrink: 0; font-variant-numeric: tabular-nums; font-family: inherit;
+    }
+    .pct-badge.c-purple { background: var(--purple-lt); color: var(--purple); }
+    .pct-badge.c-blue   { background: var(--blue-lt);   color: var(--blue);   }
+    .pct-badge.c-green  { background: var(--green-lt);  color: var(--green);  }
+
+    .param-note { font-size: 10px; color: var(--muted-lt); margin-top: 6px; }
+
+    /* ── RIGHT panel ── */
+    .right-panel { display: flex; flex-direction: column; gap: 0; }
+
+    /* section header inside results */
+    .step-div {
+      display: flex; align-items: center; gap: 10px; margin: 0 0 10px;
+    }
+    .step-pill {
+      font-size: 9px; font-weight: 700; letter-spacing: .09em;
+      text-transform: uppercase; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+    }
+    .step-pill.s1 { background: var(--blue-lt);   color: var(--blue); }
+    .step-pill.s2 { background: var(--purple-lt); color: var(--purple); }
+    .step-pill.sd { background: var(--green-lt);  color: var(--green); }
+    .step-line { flex: 1; height: 1px; background: var(--border-lt); }
+
+    /* result rows */
+    .rrows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .rrow {
+      background: var(--surf2);
+      border: 1px solid var(--border-lt);
+      border-radius: 10px; padding: 11px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .rrow:hover { border-color: var(--border); box-shadow: var(--shadow); }
+    .rrow.hl {
+      background: linear-gradient(135deg, #E8F7F1, #EEF2FF);
+      border-color: rgba(26,158,106,.3);
+    }
+    .rrow-l { display: flex; align-items: center; gap: 10px; }
+    .rdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .rlabel  { font-size: 12px; font-weight: 600; color: var(--body); }
+    .rform   { font-size: 10px; color: var(--muted-lt); margin-top: 1px; }
+    .rval    { font-size: 16px; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; }
+    .rrow.hl .rval { color: var(--green); font-size: 17px; }
+
+    /* savings bar */
+    .sav-bar {
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 9px; padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .sav-bar-l { font-size: 12px; color: var(--muted); }
+    .sav-bar-l strong { color: var(--body); }
+    .sav-bar-v { font-size: 13px; font-weight: 700; color: var(--green); }
+
+    /* bottom two-column: donut + ARR */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* donut */
+    .donut-card {
+      background: var(--surf2); border: 1px solid var(--border-lt);
+      border-radius: 12px; padding: 16px;
+    }
+    .donut-card-title { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .donut-wrap { display: flex; align-items: center; gap: 16px; }
+    .donut-cont { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+    svg.donut { transform: rotate(-90deg); }
+    .donut-ctr {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .donut-ctr-l { font-size: 9px; color: var(--muted-lt); }
+    .donut-ctr-v { font-size: 12px; font-weight: 800; color: var(--navy); }
+    .legend { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+    .leg-row { display: flex; align-items: center; gap: 7px; }
+    .leg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .leg-name { font-size: 11px; color: var(--body); flex: 1; }
+    .leg-pct  { font-size: 10px; font-weight: 600; color: var(--muted); }
+    .leg-amt  { font-size: 11px; font-weight: 700; color: var(--navy); }
+
+    /* ARR box */
+    .arr-card {
+      background: var(--indigo);
+      border-radius: 12px; padding: 20px;
+      display: flex; flex-direction: column; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .arr-card::before {
+      content: ''; position: absolute;
+      top: -30px; right: -30px; width: 120px; height: 120px;
+      border-radius: 50%; background: rgba(255,255,255,.05); pointer-events: none;
+    }
+    .arr-eyebrow {
+      font-size: 9px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: rgba(255,255,255,.45); margin-bottom: 6px;
+    }
+    .arr-val {
+      font-size: 34px; font-weight: 800; color: #fff;
+      font-variant-numeric: tabular-nums; line-height: 1;
+      margin-bottom: 8px;
+    }
+    .arr-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.8); }
+    .arr-sub   { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 3px; }
+
+    /* zero state */
+    .zero {
+      text-align: center; padding: 48px 24px;
+      color: var(--muted-lt); font-size: 13px;
+    }
+    .zero-icon { font-size: 36px; opacity: .35; margin-bottom: 10px; }
+
+    /* footer */
+    .footer {
+      margin-top: 16px; text-align: center;
+      font-size: 10px; color: var(--muted-lt);
+    }
+    .footer b { color: var(--orange); font-weight: 700; }
+
+    @media (max-width: 860px) {
+      .columns { grid-template-columns: 1fr; }
+      .bottom-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="brand">
+      <!-- Dualbird logo mark: bold blue D + orange inner arc -->
+      <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="38" height="38" rx="9" fill="#F4F6FF"/>
+        <!-- Blue outer D shape -->
+        <path d="M7 7 L7 31 L17 31 C26.5 31 31 25.5 31 19 C31 12.5 26.5 7 17 7 Z" fill="#4263EB"/>
+        <!-- White inner cutout to make D hollow -->
+        <path d="M12 12 L12 26 L17 26 C23.5 26 26.5 22.5 26.5 19 C26.5 15.5 23.5 12 17 12 Z" fill="white"/>
+        <!-- Orange crescent overlapping from inside-right -->
+        <path d="M19.5 12.5 C24.5 13.5 27.5 16 27.5 19 C27.5 22 24.5 24.5 19.5 25.5 C22.5 24 24 21.5 24 19 C24 16.5 22.5 14 19.5 12.5 Z" fill="#E8450C"/>
+      </svg>
+      <span class="brand-name">Dual<span>Bird</span></span>
+    </div>
+    <div class="topbar-pill">AWS Savings Calculator</div>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="columns">
+
+    <!-- LEFT: inputs + parameters -->
+    <div class="panel">
+      <div class="panel-inner">
+
+        <!-- Spend input -->
+        <div class="sect-label">Your Current AWS Spend</div>
+        <div class="spend-block">
+          <div class="sect-label">Total EMR + EC2 Annual Spend</div>
+          <div class="input-wrap">
+            <span class="curr">$</span>
+            <input type="number" id="totalSpend" placeholder="0" min="0" oninput="calculate()"/>
+          </div>
+          <div class="input-hint">Enter your combined annual EMR + EC2 spend to see your potential savings</div>
+          <div class="period-toggle">
+            <button class="period-btn active" id="btnAnnual"  onclick="setPeriod('annual')">Annual</button>
+            <button class="period-btn"        id="btnMonthly" onclick="setPeriod('monthly')">Monthly → Annual</button>
+          </div>
+        </div>
+
+        <!-- Assumptions -->
+        <div class="sect-label" style="margin-top:4px;">Customise Assumptions</div>
+        <div class="params-panel">
+          <div class="params-hdr" onclick="toggleParams()">
+            <div class="params-hdr-l">⚙️&nbsp; Adjust for your environment</div>
+            <div class="params-hdr-r">
+              <button class="btn-reset" onclick="resetParams(event)">Reset</button>
+              <span class="chevron open" id="chevron">▼</span>
+            </div>
+          </div>
+          <div class="params-body" id="paramsBody">
+
+            <!-- EMR share -->
+            <div class="param-grp">
+              <div class="param-grp-title c-purple">EMR Share of Spend</div>
+              <div class="sl-item">
+                <span class="sl-lbl">What % of your AWS bill is EMR? <small>— EC2 = the remainder</small></span>
+                <div class="sl-row">
+                  <input type="range" class="r-purple" id="slEMR" min="1" max="99" value="25"
+                         oninput="updateBadge('slEMR','lbEMR'); calculate()"/>
+                  <span class="pct-badge c-purple" id="lbEMR">25%</span>
+                </div>
+              </div>
+              <div class="param-note">Typical range for data-heavy workloads: 20–35%</div>
+            </div>
+
+            <!-- EC2 optimisation target -->
+            <div class="param-grp">
+              <div class="param-grp-title c-blue">EC2 Optimisation Target</div>
+              <div class="sl-item">
+                <span class="sl-lbl">Expected EC2 cost after optimisation</span>
+                <div class="sl-row">
+                  <input type="range" class="r-blue" id="slEC2" min="1" max="99" value="40"
+                         oninput="updateBadge('slEC2','lbEC2'); calculate()"/>
+                  <span class="pct-badge c-blue" id="lbEC2">40%</span>
+                </div>
+              </div>
+              <div class="param-note">Dualbird customers typically reduce EC2 spend to 35–50% of original</div>
+            </div>
+
+            <!-- Platform investment -->
+            <div class="param-grp">
+              <div class="param-grp-title c-green">Dualbird Platform Investment</div>
+              <div class="sl-item">
+                <span class="sl-lbl">Platform fee as % of your optimised EC2 spend</span>
+                <div class="sl-row">
+                  <input type="range" class="r-green" id="slDB" min="1" max="99" value="35"
+                         oninput="updateBadge('slDB','lbDB'); calculate()"/>
+                  <span class="pct-badge c-green" id="lbDB">35%</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: results -->
+    <div class="panel right-panel">
+      <div class="panel-inner" id="results" style="display:none;">
+
+        <!-- Step 1 -->
+        <div class="step-div">
+          <span class="step-pill s1">Your Current AWS Cost</span>
+          <div class="step-line"></div>
+        </div>
+        <div class="rrows">
+          <div class="rrow">
+            <div class="rrow-l">
+              <div class="rdot" style="background:var(--orange)"></div>
+              <div>
+                <div class="rlabel">EC2 Compute Spend</div>
+                <div class="rform" id="f-origEC2">Total × 75%</div>
+              </div>
+            </div>
+            <div class="rval" id="origEC2">—</div>
+          </div>
+          <div class="rrow">
+            <div class="rrow-l">
+              <div class="rdot" style="background:var(--purple)"></div>
+              <div>
+                <div class="rlabel">EMR Processing Spend</div>
+                <div class="rform" id="f-origEMR">Total × 25%</div>
+              </div>
+            </div>
+            <div class="rval" id="origEMR">—</div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-div">
+          <span class="step-pill s2">Optimised with Dualbird</span>
+          <div class="step-line"></div>
+        </div>
+        <div class="rrows">
+          <div class="rrow">
+            <div class="rrow-l">
+              <div class="rdot" style="background:var(--blue)"></div>
+              <div>
+                <div class="rlabel">Optimised EC2 Spend</div>
+                <div class="rform" id="f-newEC2">Current EC2 × 40%</div>
+              </div>
+            </div>
+            <div class="rval" id="newEC2">—</div>
+          </div>
+          <div class="rrow">
+            <div class="rrow-l">
+              <div class="rdot" style="background:var(--purple)"></div>
+              <div>
+                <div class="rlabel">Optimised EMR Spend</div>
+                <div class="rform" id="f-newEMR">Optimised EC2 × 25%</div>
+              </div>
+            </div>
+            <div class="rval" id="newEMR">—</div>
+          </div>
+        </div>
+
+        <!-- Savings bar -->
+        <div class="sav-bar">
+          <div class="sav-bar-l">You save <strong id="savPct">—</strong> on total infrastructure costs</div>
+          <div class="sav-bar-v" id="savAmt">—</div>
+        </div>
+
+        <!-- Platform investment -->
+        <div class="step-div">
+          <span class="step-pill sd">Dualbird Platform Investment</span>
+          <div class="step-line"></div>
+        </div>
+        <div class="rrows">
+          <div class="rrow hl">
+            <div class="rrow-l">
+              <div class="rdot" style="background:var(--green)"></div>
+              <div>
+                <div class="rlabel" style="color:var(--green)">Annual Platform Fee</div>
+                <div class="rform" id="f-db">Optimised EC2 × 35%</div>
+              </div>
+            </div>
+            <div class="rval" id="dbVal">—</div>
+          </div>
+        </div>
+
+        <!-- Bottom: donut + ARR side by side -->
+        <div class="bottom-row">
+
+          <!-- Donut -->
+          <div class="donut-card">
+            <div class="donut-card-title">Your Optimised Spend Mix</div>
+            <div class="donut-wrap">
+              <div class="donut-cont">
+                <svg class="donut" width="90" height="90" viewBox="0 0 90 90">
+                  <circle cx="45" cy="45" r="34" fill="none" stroke="#EDF0FF" stroke-width="18"/>
+                  <circle id="seg-ec2" cx="45" cy="45" r="34" fill="none" stroke="#4263EB" stroke-width="18" stroke-dasharray="0 214"/>
+                  <circle id="seg-emr" cx="45" cy="45" r="34" fill="none" stroke="#7C5CBF" stroke-width="18" stroke-dasharray="0 214"/>
+                  <circle id="seg-db"  cx="45" cy="45" r="34" fill="none" stroke="#1A9E6A" stroke-width="18" stroke-dasharray="0 214"/>
+                </svg>
+                <div class="donut-ctr">
+                  <div class="donut-ctr-l">Total</div>
+                  <div class="donut-ctr-v" id="donutTotal">—</div>
+                </div>
+              </div>
+              <div class="legend">
+                <div class="leg-row">
+                  <div class="leg-dot" style="background:#4263EB"></div>
+                  <div class="leg-name">EC2</div>
+                  <div class="leg-pct" id="pctEC2">—</div>
+                  <div class="leg-amt" id="lgEC2">—</div>
+                </div>
+                <div class="leg-row">
+                  <div class="leg-dot" style="background:#7C5CBF"></div>
+                  <div class="leg-name">EMR</div>
+                  <div class="leg-pct" id="pctEMR">—</div>
+                  <div class="leg-amt" id="lgEMR">—</div>
+                </div>
+                <div class="leg-row">
+                  <div class="leg-dot" style="background:#1A9E6A"></div>
+                  <div class="leg-name">Dualbird</div>
+                  <div class="leg-pct" id="pctDB">—</div>
+                  <div class="leg-amt" id="lgDB">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Savings hero -->
+          <div class="arr-card">
+            <div class="arr-eyebrow">Your Estimated Annual Savings</div>
+            <div class="arr-val" id="arrVal">—</div>
+            <div class="arr-title">Back in your budget every year</div>
+            <div class="arr-sub" id="arrSub">vs. your current AWS spend</div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Zero state -->
+      <div id="zeroState" class="zero">
+        <div class="zero-icon">📊</div>
+        Enter your current AWS spend on the left to see your potential savings
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">Estimates are based on typical customer outcomes · <b>DualBird</b> · Data &amp; AI Infra Engine</div>
+
+</div>
+
+<script>
+  let period = 'annual';
+  let open = true;
+  const DEF = { emr: 25, ec2: 40, db: 35 };
+
+  function updateBadge(sid, bid) {
+    const v = +document.getElementById(sid).value;
+    document.getElementById(bid).textContent = v + '%';
+    document.getElementById(sid).style.setProperty('--pct', v + '%');
+  }
+  function track(id) {
+    const v = +document.getElementById(id).value;
+    document.getElementById(id).style.setProperty('--pct', v + '%');
+  }
+
+  function resetParams(e) {
+    e.stopPropagation();
+    document.getElementById('slEMR').value = DEF.emr;
+    document.getElementById('slEC2').value = DEF.ec2;
+    document.getElementById('slDB').value  = DEF.db;
+    document.getElementById('lbEMR').textContent = DEF.emr + '%';
+    document.getElementById('lbEC2').textContent = DEF.ec2 + '%';
+    document.getElementById('lbDB').textContent  = DEF.db  + '%';
+    ['slEMR','slEC2','slDB'].forEach(track);
+    calculate();
+  }
+
+  function toggleParams() {
+    open = !open;
+    document.getElementById('paramsBody').classList.toggle('collapsed', !open);
+    document.getElementById('chevron').classList.toggle('open', open);
+  }
+
+  function setPeriod(p) {
+    period = p;
+    document.getElementById('btnAnnual').classList.toggle('active',  p === 'annual');
+    document.getElementById('btnMonthly').classList.toggle('active', p === 'monthly');
+    calculate();
+  }
+
+  function fmt(n) {
+    if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+    return '$' + Math.round(n).toLocaleString();
+  }
+
+  function setDonut(ec2, emr, db) {
+    const tot = ec2 + emr + db;
+    if (!tot) return;
+    const C = 2 * Math.PI * 34; // r=34 → circumference ≈ 213.6
+    let off = 0;
+    [['seg-ec2', ec2], ['seg-emr', emr], ['seg-db', db]].forEach(([id, val]) => {
+      const dash = (val / tot) * C;
+      const el = document.getElementById(id);
+      el.setAttribute('stroke-dasharray', `${dash} ${C - dash}`);
+      el.setAttribute('stroke-dashoffset', -off);
+      off += dash;
+    });
+  }
+
+  function calculate() {
+    const raw   = parseFloat(document.getElementById('totalSpend').value) || 0;
+    const total = period === 'monthly' ? raw * 12 : raw;
+    const show  = total > 0;
+    document.getElementById('results').style.display   = show ? 'block' : 'none';
+    document.getElementById('zeroState').style.display = show ? 'none'  : 'block';
+    if (!show) return;
+
+    const emrF = +document.getElementById('slEMR').value / 100;
+    const nec2 = +document.getElementById('slEC2').value / 100;
+    const dbF  = +document.getElementById('slDB').value  / 100;
+
+    // Step 1: EC2 = total / (1 + EMR share), EMR = EC2 * EMR share
+    const origEC2 = total / (1 + emrF);
+    const origEMR = origEC2 * emrF;
+    const newEC2  = origEC2 * nec2;
+    const newEMR  = newEC2 * emrF;
+    const db      = newEC2 * dbF;
+
+    const newTot = newEC2 + newEMR + db;
+    const sav    = total - newTot;
+    const savPct = ((sav / total) * 100).toFixed(1);
+
+    const p = v => Math.round(v * 100) + '%';
+    document.getElementById('f-origEC2').textContent = `Total ÷ (1 + ${p(emrF)})`;
+    document.getElementById('f-origEMR').textContent = `EC2 × ${p(emrF)}`;
+    document.getElementById('f-newEC2').textContent  = `Reduced to ${p(nec2)} of current EC2`;
+    document.getElementById('f-newEMR').textContent  = `Reduced to ${p(emrF)} of optimised EC2`;
+    document.getElementById('f-db').textContent      = `${p(dbF)} of optimised EC2`;
+
+    document.getElementById('origEC2').textContent = fmt(origEC2);
+    document.getElementById('origEMR').textContent = fmt(origEMR);
+    document.getElementById('newEC2').textContent  = fmt(newEC2);
+    document.getElementById('newEMR').textContent  = fmt(newEMR);
+    document.getElementById('dbVal').textContent   = fmt(db);
+
+    document.getElementById('savPct').textContent = savPct + '%';
+    document.getElementById('savAmt').textContent = `Saves ${fmt(sav)}/yr`;
+
+    document.getElementById('pctEC2').textContent = Math.round(newEC2/newTot*100) + '%';
+    document.getElementById('pctEMR').textContent = Math.round(newEMR/newTot*100) + '%';
+    document.getElementById('pctDB').textContent  = Math.round(db/newTot*100)    + '%';
+    document.getElementById('lgEC2').textContent  = fmt(newEC2);
+    document.getElementById('lgEMR').textContent  = fmt(newEMR);
+    document.getElementById('lgDB').textContent   = fmt(db);
+    document.getElementById('donutTotal').textContent = fmt(newTot);
+
+    setDonut(newEC2, newEMR, db);
+
+    document.getElementById('arrVal').textContent = fmt(sav);
+    document.getElementById('arrSub').textContent = period === 'monthly'
+      ? `Annualised from ${fmt(raw)}/mo current spend`
+      : 'vs. your current AWS spend';
+  }
+
+  window.addEventListener('load', () => {
+    ['slEMR','slEC2','slDB'].forEach(track);
+  });
+</script>
+</body>
+</html>
