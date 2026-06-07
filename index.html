@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,6 +57,7 @@
       align-items: center;
       gap: 12px;
     }
+    .brand-logo { height: 30px; width: auto; display: block; }
     .brand-name {
       font-size: 18px;
       font-weight: 800;
@@ -351,17 +351,11 @@
   <!-- Top bar -->
   <div class="topbar">
     <div class="brand">
-      <!-- Dualbird logo mark: bold blue D + orange inner arc -->
-      <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="38" height="38" rx="9" fill="#F4F6FF"/>
-        <!-- Blue outer D shape -->
-        <path d="M7 7 L7 31 L17 31 C26.5 31 31 25.5 31 19 C31 12.5 26.5 7 17 7 Z" fill="#4263EB"/>
-        <!-- White inner cutout to make D hollow -->
-        <path d="M12 12 L12 26 L17 26 C23.5 26 26.5 22.5 26.5 19 C26.5 15.5 23.5 12 17 12 Z" fill="white"/>
-        <!-- Orange crescent overlapping from inside-right -->
-        <path d="M19.5 12.5 C24.5 13.5 27.5 16 27.5 19 C27.5 22 24.5 24.5 19.5 25.5 C22.5 24 24 21.5 24 19 C24 16.5 22.5 14 19.5 12.5 Z" fill="#E8450C"/>
-      </svg>
-      <span class="brand-name">Dual<span>Bird</span></span>
+      <a href="https://www.dualbird.io/" target="_blank" rel="noopener">
+        <img class="brand-logo"
+             src="https://cdn.prod.website-files.com/680615b8b9074e66008466bc/680617ded782462541c84df5_logo.png"
+             alt="DualBird"/>
+      </a>
     </div>
     <div class="topbar-pill">AWS Savings Calculator</div>
   </div>
